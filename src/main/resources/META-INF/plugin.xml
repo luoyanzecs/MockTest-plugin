@@ -8,15 +8,12 @@
     <name>MockTest</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor email="luoyanzeze@icloud.com" url="https://www.yourcompany.com">cn.luoyanze</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
-  ]]></description>
+    <description><![CDATA[hahafasdfsadfasdfadsfdasfdsafsdafsdam hahafasdfsadfasdfadsfdasfdsafsdafsda]]></description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
@@ -25,12 +22,22 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-
+        <toolWindow factoryClass="cn.luoyanze.mocktest.ui.MockControlWindowFactory" id="MockTest" anchor="right"
+                    icon="/img/favicon.svg"/>
     </extensions>
+
     <actions>
-        <action id="PopupAction_ID" class="cn.luoyanze.mocktest.PopupAction" text="generateTest"
-                description="生成测试文件">
-            <add-to-group group-id="PopupMenuActions" anchor="first"/>
+        <group id="MockTestTools" class="cn.luoyanze.mocktest.group.MockTestEditorGroup" text="Mock Tool" popup="true">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </group>
+
+        <action id="GeneratorPopupAction" class="cn.luoyanze.mocktest.action.GeneratorPopupAction" text="Generate Mock Test File" description="生成测试文件">
+            <!--<add-to-group group-id="MockTestTools" anchor="first"/>-->
         </action>
+        <action id="CorrectTestFilePopupAction" class="cn.luoyanze.mocktest.action.CorrectTestFilePopupAction"
+                text="Correct Test File" description="测试文件纠错">
+            <!--<add-to-group group-id="MockTestTools" anchor="last"/>-->
+        </action>
+
     </actions>
 </idea-plugin>

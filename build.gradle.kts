@@ -11,7 +11,10 @@ repositories {
 }
 
 dependencies {
-
+    implementation("com.github.javaparser:javaparser-core:3.15.21")
+    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.15.21")
+    implementation("org.freemarker:freemarker:2.3.31")
+    testImplementation("junit:junit:4.13.2")
 }
 
 // Configure Gradle IntelliJ Plugin
