@@ -21,6 +21,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.serviceContainer.ComponentManagerImpl;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,9 +37,6 @@ public class CorrectTestFilePopupAction extends AnAction {
         if (data == null) {
             return;
         }
-
-        //Notifications service = e.getProject().getService(Notifications.class);
-        //service.register("haha", NotificationDisplayType.BALLOON);
 
         if (!data.getFileType().getName().equals("JAVA")) {
             // 只支持Java文件
@@ -67,7 +65,10 @@ public class CorrectTestFilePopupAction extends AnAction {
             testParser = StaticJavaParser.parse(Paths.get(folderPath, data.getName()));
             new TestPrepareVisitAdapter().visit(testParser, testSourceMap);
 
-            String sourcePath = folderPath.split("src/test")[0] + "src/main/java/" + testSourceMap.getSource().toString().replaceAll("\\.", "/") + ".java";
+            String sourcePath = folderPath.split(Paths.get("src/test").toString())[0]
+                    + Paths.get("src/main/java/")
+                    + testSourceMap.getSource().toString().replaceAll("\\.", File.pathSeparator) + ".java";
+
             System.out.println(sourcePath);
             if (Files.exists(Paths.get(sourcePath))) {
                 String ctx = Files.readString(Paths.get(sourcePath));
@@ -78,9 +79,7 @@ public class CorrectTestFilePopupAction extends AnAction {
                 editor.getDocument().setText(testParser.toString());
             } else {
                 // 只支持Java文件
-                Project project = e.getProject();
-                NotificationGroup notify = new NotificationGroup("cn.luoyanze.moctest.notify", NotificationDisplayType.BALLOON, true);
-                notify.createNotification("只支持JAVA文件类型", NotificationType.ERROR).notify(project);
+                Notifications.Bus.notify(new Notification(Notifications.SYSTEM_MESSAGES_GROUP_ID, "MockTest", "只支持JAVA文件类型", NotificationType.ERROR));
             }
 
         } catch (IOException ex) {
