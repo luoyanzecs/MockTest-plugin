@@ -2,7 +2,7 @@ package cn.luoyanze.mocktest.parser;
 
 import cn.luoyanze.mocktest.parser.model.JavaFileV3;
 import cn.luoyanze.mocktest.parser.model.TestSourceMap;
-import cn.luoyanze.mocktest.parser.utils.TemplateUtil;
+import cn.luoyanze.mocktest.service.TemplateService;
 import cn.luoyanze.mocktest.parser.visit.SourceVisitorAdapter;
 import cn.luoyanze.mocktest.parser.visit.TestPrepareVisitAdapter;
 import cn.luoyanze.mocktest.parser.visit.TestVisitorAdapter;
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.regex.Pattern;
 
 /**
@@ -144,7 +143,7 @@ public class JavaParserTest {
         new SourceVisitorAdapter().visit(source, prepareForTestGenFile);
         String testClassname = prepareForTestGenFile.getName() + "Test";
         prepareForTestGenFile.setTestFilenameForGenerate(testClassname);
-        String mockTestTemplate = TemplateUtil.generateTemplate(prepareForTestGenFile);
+        String mockTestTemplate = TemplateService.generateTemplate(prepareForTestGenFile);
         System.out.println(mockTestTemplate);
     }
 

@@ -1,4 +1,4 @@
-package cn.luoyanze.mocktest.parser.utils;
+package cn.luoyanze.mocktest.service;
 
 import cn.luoyanze.mocktest.parser.model.JavaFileV3;
 import cn.luoyanze.mocktest.parser.model.java.ClassMap;
@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
  */
 
 
-public class TemplateUtil {
+public class TemplateService {
 
     public static String generateTemplate(JavaFileV3 file) throws IOException, TemplateException {
         Configuration configuration = new Configuration(Configuration.VERSION_2_3_31);
         StringTemplateLoader stringTemplateLoader = new StringTemplateLoader();
 
-        stringTemplateLoader.putTemplate("JavaTemplate", new String(TemplateUtil.class.getResourceAsStream("/template/JavaTemplate.ftl").readAllBytes()));
+        stringTemplateLoader.putTemplate("JavaTemplate", new String(TemplateService.class.getResourceAsStream("/template/JavaTemplate.ftl").readAllBytes()));
         configuration.setTemplateLoader(stringTemplateLoader);
 
         Map<String, Object> data = getDataMap(file);

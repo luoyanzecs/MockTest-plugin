@@ -29,6 +29,8 @@ bin/
 !**/src/test/**/bin/
 
 .idea
+NearbyRestaurantRepositoryImplTest.java
+NearbyRestaurantRepositoryImpl.java
 
 ### NetBeans ###
 /nbproject/private/

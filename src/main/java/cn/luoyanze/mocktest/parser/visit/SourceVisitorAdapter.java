@@ -112,24 +112,5 @@ public class SourceVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
                 }
         );
     }
-
-    //private void handleMethod(Statement statement, JavaFileV3 file) {
-    //    if (statement.isExpressionStmt()) {
-    //        statement.asExpressionStmt().getExpression().asVariableDeclarationExpr()
-    //                .getVariables().stream()
-    //                .findFirst().ifPresent(variableDeclarator -> {
-    //                    variableDeclarator.getInitializer().
-    //                });
-    //    } else if (statement.isIfStmt()) {
-    //
-    //    } else if (statement.isTryStmt()) {
-    //
-    //    } else if (statement.isReturnStmt()) {
-    //
-    //    } else if (statement.isForStmt()) {
-    //
-    //    } else {
-    //
-    //    }
-    //}
+    
 }

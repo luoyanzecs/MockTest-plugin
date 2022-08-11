@@ -1,12 +1,11 @@
 package cn.luoyanze.mocktest.ui;
 
+import cn.luoyanze.mocktest.service.LoggerReplaceService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * @Author luoyanze[luoyanzeze@icloud.com]
@@ -21,20 +20,14 @@ public class MockControlWindow {
 
     public MockControlWindow(@NotNull Project project, @NotNull ToolWindow toolWindow) {
 
-        String projectPath = project.getBasePath();
+        final String projectPath = project.getBasePath();
 
-        refineAllJavaTest.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        refineAllJavaTest.addActionListener(e -> {
 
-            }
         });
 
-        replaceAllLogger.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-            }
+        replaceAllLogger.addActionListener(e -> {
+            new LoggerReplaceService(e, project, toolWindow).startReplace();
         });
 
     }
