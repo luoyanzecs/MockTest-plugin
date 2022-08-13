@@ -1,12 +1,12 @@
 package cn.luoyanze.mocktest.parser.visit;
 
-import cn.luoyanze.mocktest.parser.model.JavaFileV3;
-import cn.luoyanze.mocktest.parser.model.java.ClassMap;
-import cn.luoyanze.mocktest.parser.model.java.FieldV3;
+import cn.luoyanze.mocktest.parser.model.SimpleJavaSource;
+import cn.luoyanze.mocktest.parser.model.java.Field;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
@@ -24,21 +24,22 @@ import java.util.stream.Collectors;
 
 /**
  * @Author luoyanze[luoyanzeze@icloud.com]
- * @Date 2022/8/6 11:42 AM
+ * @Date 2022/8/13 4:04 PM
  */
 
 
-public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
+public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJavaSource> {
 
     private final JavaParser javaParser = new JavaParser();
 
+    private String testVariable;
 
     @Override
-    public void visit(final CompilationUnit n, final JavaFileV3 file) {
+    public void visit(final CompilationUnit n, final SimpleJavaSource source) {
 
         n.getTypes().forEach(p -> {
-            if (p.getNameAsString().contains(file.getName())) {
-                p.accept(this, file);
+            if (p.getNameAsString().contains(source.getClassname())) {
+                p.accept(this, source);
             }
         });
 
@@ -57,66 +58,43 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
         n.addImport("org.powermock.core.classloader.annotations.PrepareForTest");
         n.addImport("org.powermock.core.classloader.annotations.SuppressStaticInitializationFor");
         n.addImport("org.powermock.modules.junit4.PowerMockRunner");
-        file.getUseImports().stream().map(ClassMap::toString).forEach(n::addImport);
-        List<ImportDeclaration> allImports = n.getImports().stream().sorted(Comparator.comparing(NodeWithName::getNameAsString)).collect(Collectors.toList());
 
+        source.UTIL.getImports().forEach(n::addImport);
+        List<ImportDeclaration> allImports = n.getImports().stream().sorted(Comparator.comparing(NodeWithName::getNameAsString)).collect(Collectors.toList());
         n.setImports(new NodeList<>(allImports));
     }
 
-
     @Override
-    public void visit(final ClassOrInterfaceDeclaration n, final JavaFileV3 file) {
+    public void visit(final ClassOrInterfaceDeclaration n, final SimpleJavaSource source) {
 
         Set<String> annotations = n.getAnnotations().stream().map(NodeWithName::getNameAsString).collect(Collectors.toSet());
         if (!annotations.contains("RunWith")) {
             return;
         }
         // 注解处理
-        processAnnotaions(n, file);
-
+        processAnnotations(n, source);
         // 字段处理
-        processFields(n, file);
-
+        processFields(n, source);
         // setup方法处理
-        processSetupMethod(n, file);
+        processSetupMethod(n, source);
 
         sortFieldsAndMethods(n);
-
     }
 
-    private static void sortFieldsAndMethods(ClassOrInterfaceDeclaration n) {
-        List<BodyDeclaration<?>> members = n.getMembers().stream().sorted((o1, o2) -> {
-            if (o1.isFieldDeclaration() && o2.isFieldDeclaration()) {
-                return 0;
-            } else if (o1.isFieldDeclaration() && o2.isMethodDeclaration()) {
-                return -1;
-            } else if (o1.isMethodDeclaration() && o2.isFieldDeclaration()) {
-                return 1;
-            } else if (o1.isMethodDeclaration() && o2.isMethodDeclaration()) {
-                MethodDeclaration method1 = o1.asMethodDeclaration();
-                MethodDeclaration method2 = o2.asMethodDeclaration();
-                if (method1.getAnnotations().size() > 0 && method1.getAnnotations().get(0).toString().equals("@Before")) {
-                    return -1;
-                }
-                return 1;
-            } else return 0;
-        }).collect(Collectors.toList());
+    private void processSetupMethod(final ClassOrInterfaceDeclaration n, final SimpleJavaSource source) {
+        List<MethodDeclaration> setupMethods =
+                n.getMembers().stream()
+                        .filter(BodyDeclaration::isMethodDeclaration)
+                        .map(BodyDeclaration::asMethodDeclaration)
+                        .filter(it -> it.getAnnotations().stream().map(NodeWithName::getNameAsString).anyMatch("Before"::equals))
+                        .collect(Collectors.toList());
 
-        n.setMembers(new NodeList<>(members));
-    }
-
-    private void processSetupMethod(final ClassOrInterfaceDeclaration n, JavaFileV3 file) {
-        List<MethodDeclaration> setupMethods = n.getMembers().stream()
-                .filter(BodyDeclaration::isMethodDeclaration)
-                .map(BodyDeclaration::asMethodDeclaration)
-                .filter(it -> it.getAnnotations().stream() .map(NodeWithName::getNameAsString).anyMatch("Before"::equals))
-                .collect(Collectors.toList());
-
-        List<MethodDeclaration> beforeClassMethods = n.getMembers().stream()
-                .filter(BodyDeclaration::isMethodDeclaration)
-                .map(BodyDeclaration::asMethodDeclaration)
-                .filter(it -> it.getAnnotations().stream() .map(NodeWithName::getNameAsString).anyMatch("BeforeClass"::equals))
-                .collect(Collectors.toList());
+        List<MethodDeclaration> beforeClassMethods =
+                n.getMembers().stream()
+                        .filter(BodyDeclaration::isMethodDeclaration)
+                        .map(BodyDeclaration::asMethodDeclaration)
+                        .filter(it -> it.getAnnotations().stream().map(NodeWithName::getNameAsString).anyMatch("BeforeClass"::equals))
+                        .collect(Collectors.toList());
 
         MethodDeclaration firstSetup = setupMethods.stream().findFirst().orElse(new MethodDeclaration());
         if (firstSetup.getBody().isEmpty()) {
@@ -140,8 +118,8 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
             beforeClassMethod.remove();
         }
 
-        // 添加mockStatic(), 去除重复的mock()
-        Set<String> needMocks = file.getFields().stream().map(FieldV3::getClassname).collect(Collectors.toSet());
+        // 去除重复的mock(), Membermodifier.field()
+        Set<String> needMocks = source.UTIL.getMockFields().stream().map(Field::getClassname).collect(Collectors.toSet());
         Set<String> existMockStatics = new HashSet<>();
         List<Statement> needRemoveStatements = setupBody.getStatements().stream()
                 .filter(Statement::isExpressionStmt)
@@ -151,7 +129,7 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
                         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
                         if ("mockStatic".equals(methodCallExpr.getNameAsString())) {
                             String typeAsString = methodCallExpr.getArguments().get(0).asClassExpr().getTypeAsString();
-                            if ("LoggerFactory".equals(typeAsString)) {
+                            if ("LoggerFactory".equals(typeAsString) && source.UTIL.isUseSlf4j()) {
                                 return true;
                             }
                             existMockStatics.add(typeAsString);
@@ -162,41 +140,87 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
                             return needMocks.contains(typeAsString);
                         }
                         if ("thenReturn".equals(methodCallExpr.getNameAsString())) {
-                            return methodCallExpr.getScope().toString().contains("LoggerFactory.getLogger");
+                            return methodCallExpr.getScope().toString().contains("LoggerFactory.getLogger") && source.UTIL.isUseSlf4j();
+                        }
+                        if (methodCallExpr.getScope().map(Node::toString).filter(it -> it.startsWith("MemberModifier.field")).isPresent()) {
+                            return true;
                         }
                     }
                     if (expression.isAssignExpr()) {
-                        return Pattern.compile("new\\s+" + file.getName() + "\\s*?\\(").matcher(expression.toString()).find();
+                        return Pattern.compile("new\\s+" + source.getClassname() + "\\s*?\\(").matcher(expression.toString()).find();
                     }
                     return false;
                 }).collect(Collectors.toList());
 
         needRemoveStatements.forEach(setupBody::remove);
 
-        Sets.union(file.getCtripStaticMocks(), existMockStatics)
-                .forEach(mockStaticClassname -> {
-                    ExpressionStmt expressionStmt = new ExpressionStmt(
-                            new MethodCallExpr(
-                                    new NameExpr("PowerMockito"),
-                                    "mockStatic",
-                                    new NodeList<>(new ClassExpr(javaParser.parseClassOrInterfaceType(mockStaticClassname).getResult().get()))
-                            )
-                    );
-                    setupBody.addStatement(0, expressionStmt);
+        // 添加mockStatic
+        Sets.union(source.UTIL.getMockStatics(), existMockStatics)
+                .forEach(mockStaticClassname ->
+                        javaParser.parseClassOrInterfaceType(mockStaticClassname).getResult()
+                                .ifPresent(classOrInterfaceType ->
+                                        setupBody.addStatement(
+                                                0,
+                                                new ExpressionStmt(new MethodCallExpr(new NameExpr("PowerMockito"), "mockStatic", new NodeList<>(new ClassExpr(classOrInterfaceType))))
+                                        )
+                                )
+                );
+
+        // 添加new 方法
+        List<Expression> paramExprs = source.UTIL.getConstructorParamsForTest().stream()
+                .map(param -> param == null ? new NullLiteralExpr() : new NameExpr(param))
+                .collect(Collectors.toList());
+
+        javaParser.parseClassOrInterfaceType(source.getClassname()).getResult()
+                .ifPresent(sourceClass-> {
+                    ExpressionStmt newExpressionStmt = new ExpressionStmt(new VariableDeclarationExpr(
+                            new VariableDeclarator(null, testVariable, new ObjectCreationExpr(null, sourceClass, new NodeList<>(paramExprs)))
+                    ));
+                    setupBody.addStatement(newExpressionStmt);
                 });
+
+        // 添加membermodifier.field
+        List<Field> memeberModifierFields =
+                source.UTIL.getMockFields().stream()
+                        .filter(it -> !source.UTIL.getConstructorParamsForTest().contains(it.getName()))
+                        .collect(Collectors.toList());
+
+        String memberModifierTemplate = "MemberModifier.field(${class_name}.class, \"${field.name}\").set(${test_variable}, ${field.name});";
+        memeberModifierFields.forEach(it -> {
+            String statment = memberModifierTemplate
+                    .replace("${class_name}", source.getClassname())
+                    .replace("${field.name}", it.getName())
+                    .replace("${test_variable}", testVariable);
+
+            javaParser.parseStatement(statment).getResult().ifPresent(setupBody::addStatement);
+        });
     }
 
-    private void processFields(final ClassOrInterfaceDeclaration n, JavaFileV3 file) {
+    @Override
+    public void visit(FieldDeclaration n, SimpleJavaSource source) {
+        n.getAnnotations().stream()
+                .filter(it -> it.getNameAsString().equals("InjectMocks"))
+                .findFirst()
+                .ifPresent(annotationExpr -> n.getAnnotations().remove(annotationExpr));
+
+        VariableDeclarator variable = n.getVariable(0);
+        if (variable.getTypeAsString().equals(source.getClassname())) {
+            testVariable = variable.getNameAsString();
+        }
+        super.visit(n, source);
+    }
+
+    private void processFields(final ClassOrInterfaceDeclaration n, final SimpleJavaSource source) {
 
         List<FieldDeclaration> fields = n.getMembers().stream()
                 .filter(BodyDeclaration::isFieldDeclaration)
                 .map(BodyDeclaration::asFieldDeclaration)
                 .collect(Collectors.toList());
 
-        fields.forEach(it ->  it.accept(this, file));
+        fields.forEach(it ->  it.accept(this, source));
 
         // fields 补偿
-        Set<String> needMockFields = file.getFields().stream().map(FieldV3::getClassname).collect(Collectors.toSet());
+        List<Field> needMockFields = source.UTIL.getMockFields();
 
         Set<String> alreadyMockedFields = fields.stream()
                 .map(FieldDeclaration::getVariables)
@@ -204,10 +228,8 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        needMockFields.removeAll(alreadyMockedFields);
-
-        file.getFields().stream()
-                .filter(it -> needMockFields.contains(it.getClassname()))
+        needMockFields.stream()
+                .filter(it -> !alreadyMockedFields.contains(it.getClassname()))
                 .forEach(field -> {
                     FieldDeclaration fieldDeclaration = n.addPrivateField(field.getClassname(), field.getName());
                     fieldDeclaration.addMarkerAnnotation("Mock");
@@ -215,42 +237,39 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
 
     }
 
-    @Override
-    public void visit(final FieldDeclaration n, JavaFileV3 file) {
-        n.getVariables().stream().findFirst().ifPresent(variableDeclarator -> {
-            if (variableDeclarator.getTypeAsString().equals(file.getName())) {
-                // add @InjectMocks
-                variableDeclarator.removeInitializer();
-                boolean isModifyByInjectMocks = n.getAnnotations().stream().map(NodeWithName::getNameAsString).anyMatch("InjectMocks"::equals);
-                if (!isModifyByInjectMocks) {
-                    n.addMarkerAnnotation("InjectMocks");
+    private void sortFieldsAndMethods(ClassOrInterfaceDeclaration n) {
+        List<BodyDeclaration<?>> members = n.getMembers().stream().sorted((o1, o2) -> {
+            if (o1.isFieldDeclaration() && o2.isFieldDeclaration()) {
+                return 0;
+            } else if (o1.isFieldDeclaration() && o2.isMethodDeclaration()) {
+                return -1;
+            } else if (o1.isMethodDeclaration() && o2.isFieldDeclaration()) {
+                return 1;
+            } else if (o1.isMethodDeclaration() && o2.isMethodDeclaration()) {
+                MethodDeclaration method1 = o1.asMethodDeclaration();
+                MethodDeclaration method2 = o2.asMethodDeclaration();
+                if (method1.getAnnotations().size() > 0 && method1.getAnnotations().get(0).toString().equals("@Before")) {
+                    return -1;
                 }
-            }
+                return 1;
+            } else return 0;
+        }).collect(Collectors.toList());
 
-            Set<String> needMockFields = file.getFields().stream().map(FieldV3::getClassname).collect(Collectors.toSet());
-            if (needMockFields.contains(variableDeclarator.getTypeAsString())) {
-                // add @Mock
-                variableDeclarator.removeInitializer();
-                boolean isModifyByInjectMocks = n.getAnnotations().stream().map(NodeWithName::getNameAsString).anyMatch("Mock"::equals);
-                if (!isModifyByInjectMocks) {
-                    n.addMarkerAnnotation("Mock");
-                }
-            }
-        });
+        n.setMembers(new NodeList<>(members));
     }
 
-    private void processAnnotaions(ClassOrInterfaceDeclaration n, JavaFileV3 file) {
+
+    private void processAnnotations(ClassOrInterfaceDeclaration n, SimpleJavaSource source) {
 
         // slf4j proxy
-        if (file.getLogger() != null) {
-            n.getAnnotations().stream().filter(it -> "MockPolicy".equals(it.getNameAsString())).findFirst().ifPresent(it -> n.getAnnotations().remove(it));
-            javaParser.parseClassOrInterfaceType("Slf4jMockPolicy").getResult().ifPresent(
-                    classOrInterfaceType -> {
-                        ArrayInitializerExpr arrayInitializerExpr = new ArrayInitializerExpr(new NodeList<>(new ClassExpr(classOrInterfaceType)));
-                        n.addSingleMemberAnnotation("MockPolicy", arrayInitializerExpr);
-                    }
-            );
-        }
+        n.getAnnotations().stream().filter(it -> "MockPolicy".equals(it.getNameAsString())).findFirst().ifPresent(it -> n.getAnnotations().remove(it));
+        javaParser.parseClassOrInterfaceType("Slf4jMockPolicy").getResult().ifPresent(
+                classOrInterfaceType -> {
+                    ArrayInitializerExpr arrayInitializerExpr = new ArrayInitializerExpr(new NodeList<>(new ClassExpr(classOrInterfaceType)));
+                    n.addSingleMemberAnnotation("MockPolicy", arrayInitializerExpr);
+                }
+        );
+
         // 添加prepare注解
         Optional<AnnotationExpr> prepareForTestItemsExpr = n.getAnnotations().stream().filter(it -> "PrepareForTest".equals(it.getNameAsString())).findFirst();
         Set<String> currentprepareForTestItems = prepareForTestItemsExpr
@@ -264,7 +283,8 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
                 .collect(Collectors.toSet());
 
         prepareForTestItemsExpr.ifPresent(it -> n.getAnnotations().remove(it));
-        Set<String> prepareForTestItems = file.getUseImports().stream().map(ClassMap::getClassname).collect(Collectors.toSet());
+
+        Set<String> prepareForTestItems = source.UTIL.getPrepareForTest();
 
         ArrayInitializerExpr arrayInitializerExprPrepareForTest = new ArrayInitializerExpr(
                 new NodeList<>(
@@ -293,17 +313,16 @@ public class TestVisitorAdapter extends VoidVisitorAdapter<JavaFileV3> {
 
 
         suppressStaticInitializationExpr.ifPresent(it -> n.getAnnotations().remove(it));
-        Set<String> suppressStaticInitializationItems = file.getUseImports().stream().map(ClassMap::toString).collect(Collectors.toSet());
+        Set<String> suppressStaticInitializationItems = source.UTIL.getPrepareForTest();
         ArrayInitializerExpr arrayInitializerExprPrepareForTestSuppressStatic = new ArrayInitializerExpr(
                 new NodeList<>(Sets
-                                .intersection(
-                                        file.getImports().stream().map(ClassMap::toString).collect(Collectors.toSet()),
-                                        Sets.union(currentSuppressStaticInitializationItems, suppressStaticInitializationItems)
-                                )
-                                .stream().sorted().map(StringLiteralExpr::new).collect(Collectors.toSet())
+                        .intersection(
+                                source.getImportMaps().entrySet().stream().map(it -> it.getValue() + "." + it.getKey()).collect(Collectors.toSet()),
+                                Sets.union(currentSuppressStaticInitializationItems, suppressStaticInitializationItems)
+                        )
+                        .stream().sorted().map(StringLiteralExpr::new).collect(Collectors.toSet())
                 )
         );
         n.addSingleMemberAnnotation("SuppressStaticInitializationFor", arrayInitializerExprPrepareForTestSuppressStatic);
     }
-
 }

@@ -37,18 +37,20 @@ public class MockTestEditorGroup extends ActionGroup {
 
         Editor editor = e.getData(LangDataKeys.EDITOR);
 
-        if (data == null || !data.getFileType().getName().equals("JAVA")) {
-            return new AnAction[0];
-        }
+        return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction"), ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
 
-        String folderPath = data.getContainingDirectory().toString().split(":")[1];
-
-        if (folderPath.contains(Paths.get("/src/main").toString())) {
-            return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction") };
-        } else if (folderPath.contains(Paths.get("/src/test").toString())){
-            return new AnAction[] { ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
-        } else {
-            return new AnAction[0];
-        }
+        //if (data == null || !data.getFileType().getName().equals("JAVA")) {
+        //    return new AnAction[0];
+        //}
+        //
+        //String folderPath = data.getContainingDirectory().toString().split(":")[1];
+        //
+        //if (folderPath.contains(Paths.get("/src/main").toString())) {
+        //    return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction") };
+        //} else if (folderPath.contains(Paths.get("/src/test").toString())){
+        //    return new AnAction[] { ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
+        //} else {
+        //    return new AnAction[0];
+        //}
     }
 }

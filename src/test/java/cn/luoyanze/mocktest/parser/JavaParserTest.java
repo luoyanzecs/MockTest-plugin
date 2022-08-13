@@ -1,12 +1,13 @@
 package cn.luoyanze.mocktest.parser;
 
-import cn.luoyanze.mocktest.parser.model.JavaFileV3;
+import cn.luoyanze.mocktest.parser.model.SimpleJavaSource;
 import cn.luoyanze.mocktest.parser.model.TestSourceMap;
+import cn.luoyanze.mocktest.parser.visit.JavaSourceVisitorAdapter;
+import cn.luoyanze.mocktest.parser.visit.JavaTestWithSourceVisitorAdapter;
 import cn.luoyanze.mocktest.service.TemplateService;
-import cn.luoyanze.mocktest.parser.visit.SourceVisitorAdapter;
-import cn.luoyanze.mocktest.parser.visit.TestPrepareVisitAdapter;
-import cn.luoyanze.mocktest.parser.visit.TestVisitorAdapter;
+import cn.luoyanze.mocktest.parser.visit.PreviousTestVisitAdapter;
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -15,9 +16,11 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import freemarker.template.TemplateException;
 import org.junit.Test;
@@ -26,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -136,29 +140,17 @@ public class JavaParserTest {
 
     }
 
-    @Test
-    public void test_template() throws IOException, TemplateException {
-        JavaFileV3 prepareForTestGenFile = new JavaFileV3();
-        CompilationUnit source = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImpl.java"));
-        new SourceVisitorAdapter().visit(source, prepareForTestGenFile);
-        String testClassname = prepareForTestGenFile.getName() + "Test";
-        prepareForTestGenFile.setTestFilenameForGenerate(testClassname);
-        String mockTestTemplate = TemplateService.generateTemplate(prepareForTestGenFile);
-        System.out.println(mockTestTemplate);
-    }
-
 
     @Test
     public void testParser() throws Exception{
-        JavaFileV3 javaFileV3 = new JavaFileV3();
+        SimpleJavaSource javaFileV3 = new SimpleJavaSource();
 
         CompilationUnit parse = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImpl.java"));
-        new SourceVisitorAdapter().visit(parse, javaFileV3);
+        new JavaSourceVisitorAdapter().visit(parse, javaFileV3);
 
         CompilationUnit parse1 = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImplTest.java"));
-        new TestVisitorAdapter().visit(parse1, javaFileV3);
+        new JavaTestWithSourceVisitorAdapter().visit(parse1, javaFileV3);
         System.out.println(parse1);
-
     }
 
     @Test
@@ -172,7 +164,7 @@ public class JavaParserTest {
     public void testPrepare() throws IOException {
         TestSourceMap testSourceMap = new TestSourceMap();
         CompilationUnit parse1 = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImplTest.java"));
-        new TestPrepareVisitAdapter().visit(parse1, testSourceMap);
+        new PreviousTestVisitAdapter().visit(parse1, testSourceMap);
         System.out.println("-----------");
     }
 
@@ -182,6 +174,24 @@ public class JavaParserTest {
         //Files.createDirectories(path);
 
         System.out.println(Files.exists(Paths.get("/Users/a")));
+    }
+
+    @Test
+    public void testJavaSOurceVisitorAdapter() throws IOException, TemplateException {
+
+        SimpleJavaSource simpleJavaSource = new SimpleJavaSource();
+        CompilationUnit parse = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImpl.java"));
+        new JavaSourceVisitorAdapter().visit(parse, simpleJavaSource);
+        String myTest = TemplateService.generateTemplate(simpleJavaSource, "MyTest");
+        System.out.println(myTest);
+        System.out.println("-------");
+    }
+
+
+    @Test public void testparse() {
+        JavaParser javaParser = new JavaParser();
+        ParseResult<Statement> statementParseResult = javaParser.parseStatement("MemberModifier.    field(A.class, \"abc\").set(abc, 123);");
+        System.out.println(statementParseResult);
     }
 }
 

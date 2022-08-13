@@ -23,10 +23,8 @@ import java.util.stream.Collectors;
  * 获取映射关系
  */
 
-public class TestPrepareVisitAdapter extends VoidVisitorAdapter<TestSourceMap> {
-
+public class PreviousTestVisitAdapter extends VoidVisitorAdapter<TestSourceMap> {
     private Set<String> maybeSource = new HashSet<>();
-
 
     @Override
     public void visit(final CompilationUnit n, final TestSourceMap map) {

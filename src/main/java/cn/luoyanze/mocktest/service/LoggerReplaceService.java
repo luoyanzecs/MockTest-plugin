@@ -1,11 +1,14 @@
 package cn.luoyanze.mocktest.service;
 
+import cn.luoyanze.mocktest.action.CorrectTestFilePopupAction;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.module.ModuleUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
@@ -26,7 +29,8 @@ import java.util.stream.Stream;
 
 public class LoggerReplaceService {
 
-    private static final String LOGGER_REG = "import[^;\n\\(\\)]*?\\.Logger(?=[;|\\s|\n])";
+    private static final Logger logger = LoggerFactory.getLogger(LoggerReplaceService.class);
+    private static final String LOGGER_REG = "import[^;\n]*?\\.Logger(?=[;|\\s|\n])";
     private static final String LOGGERFACTORY_REG = "import[^;\n]*?\\.LoggerFactory(?=[;|\\s|\n])";
     private final ActionEvent actionEvent;
     private final Project project;
@@ -41,25 +45,25 @@ public class LoggerReplaceService {
 
     public void startReplace() {
         Module[] modules = ModuleManager.getInstance(project).getModules();
-        Set<String> startPoints = Arrays.stream(modules)
+        Set<Path> startPoints = Arrays.stream(modules)
                 .map(ModuleUtil::getModuleDirPath)
-                .map(dir -> Set.of(dir + "/src/main/java", dir + "/src/main/test"))
+                .map(Paths::get)
+                .map(dir -> Set.of(dir.resolve("src/main/java"), dir.resolve("src/main/test")))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
 
         startPoints.forEach(this::replaceSingele);
     }
 
-    private void replaceSingele(String path) {
+    private void replaceSingele(Path path) {
         try{
-             Files.walk(Paths.get(path), FileVisitOption.FOLLOW_LINKS)
+             Files.walk(path, FileVisitOption.FOLLOW_LINKS)
                     .filter(it -> !Files.isDirectory(it, LinkOption.NOFOLLOW_LINKS))
                     .filter(it -> it.toString().endsWith("java") || it.toString().endsWith("kt"))
                     .forEach(this::loggerhandler);
         } catch (Exception e) {
-            System.out.println(e);
+            logger.error(e.getMessage(), e);
         }
-
     }
 
     private void loggerhandler(Path path) {
@@ -74,7 +78,7 @@ public class LoggerReplaceService {
             Files.writeString(path, after, StandardOpenOption.WRITE);
 
         } catch (Exception e) {
-            System.out.println(e);
+            logger.error(e.getMessage(), e);
         }
     }
 }

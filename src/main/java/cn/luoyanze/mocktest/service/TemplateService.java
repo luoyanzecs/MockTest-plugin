@@ -1,17 +1,18 @@
 package cn.luoyanze.mocktest.service;
 
-import cn.luoyanze.mocktest.parser.model.JavaFileV3;
-import cn.luoyanze.mocktest.parser.model.java.ClassMap;
+import cn.luoyanze.mocktest.parser.model.SimpleJavaSource;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,48 +23,61 @@ import java.util.stream.Collectors;
 
 public class TemplateService {
 
-    public static String generateTemplate(JavaFileV3 file) throws IOException, TemplateException {
+    private static final Logger logger = LoggerFactory.getLogger(TemplateService.class);
+
+    static final String template;
+    static {
+        InputStream resourceAsStream = TemplateService.class.getResourceAsStream(Paths.get("/template/JavaTemplate.ftl").toString());
+        String ctx = "";
+        try {
+            if (resourceAsStream != null) {
+                ctx = new String(resourceAsStream.readAllBytes());
+                resourceAsStream.close();
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+
+        template = ctx;
+
+    }
+
+    private static Map<String, Object> getDataMap(SimpleJavaSource source, String testClassname) {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("package_name", source.getPackageName());
+        data.put("class_name", source.getClassname());
+        data.put("test_class_name", testClassname);
+
+        Set<String> prepareForTest = source.UTIL.getPrepareForTest();
+        data.put("prepare_for_tests", prepareForTest);
+        data.put("suppresses", prepareForTest.stream().map(it -> source.getImportMaps().get(it)).filter(Objects::nonNull).collect(Collectors.toSet()));
+
+        data.put("mocks", source.UTIL.getMockFields());
+        data.put("mock_statics", source.UTIL.getMockStatics());
+
+        data.put("useSlf4j", source.UTIL.isUseSlf4j());
+
+        data.put("constructor_params", source.UTIL.getConstructorParamsForTest());
+        data.put("fields_not_in_constructor", source.UTIL.getFieldsNotInConstructor());
+
+        data.put("imports", source.UTIL.getImports());
+
+        return data;
+    }
+
+    public static String generateTemplate(SimpleJavaSource source, String testClassname) throws IOException, TemplateException {
         Configuration configuration = new Configuration(Configuration.VERSION_2_3_31);
         StringTemplateLoader stringTemplateLoader = new StringTemplateLoader();
 
-        stringTemplateLoader.putTemplate("JavaTemplate", new String(TemplateService.class.getResourceAsStream("/template/JavaTemplate.ftl").readAllBytes()));
+        stringTemplateLoader.putTemplate("JavaTemplate", template);
         configuration.setTemplateLoader(stringTemplateLoader);
 
-        Map<String, Object> data = getDataMap(file);
+        Map<String, Object> data = getDataMap(source, testClassname);
 
         Template template = configuration.getTemplate("JavaTemplate");
         StringWriter out = new StringWriter();
         template.process(data, out);
 
         return out.toString();
-    }
-
-
-    private static Map<String, Object> getDataMap(JavaFileV3 file) {
-        HashMap<String, Object> data = new HashMap<>();
-        data.put("package_name", file.getPackageName());
-
-        List<Object> mocks = file.getFields().
-                stream().map(it -> {
-                    HashMap<String, Object> map = new HashMap<>();
-                    map.put("classname", it.getClassname());
-                    map.put("name", it.getName());
-                    return map;
-                }).collect(Collectors.toList());
-
-        data.put("mocks", mocks);
-
-        List<String> imports = file.getUseImports().stream().map(ClassMap::toString).sorted().collect(Collectors.toList());
-        imports.add(file.getPackageName() + "." + file.getName());
-
-        data.put("imports", imports);
-        data.put("useSlf4j", file.isUseSlf4j());
-        data.put("prepareForTests", file.getUseImports().stream().map(ClassMap::getClassname).sorted().collect(Collectors.toList()));
-        data.put("suppresses", file.getUseImports().stream().map(ClassMap::toString).sorted().collect(Collectors.toList()));
-        data.put("test_class_name", file.getTestFilenameForGenerate());
-        data.put("class_name", file.getName());
-        data.put("mockStatics", file.getCtripStaticMocks());
-
-        return data;
     }
 }
