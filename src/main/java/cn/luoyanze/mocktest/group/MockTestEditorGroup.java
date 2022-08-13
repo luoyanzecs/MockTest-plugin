@@ -16,6 +16,7 @@ import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -33,24 +34,25 @@ public class MockTestEditorGroup extends ActionGroup {
             return new AnAction[0];
         }
 
-        PsiFile data = e.getData(LangDataKeys.PSI_FILE);
+        PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
 
         Editor editor = e.getData(LangDataKeys.EDITOR);
 
-        return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction"), ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
+        //return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction"), ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
 
-        //if (data == null || !data.getFileType().getName().equals("JAVA")) {
-        //    return new AnAction[0];
-        //}
-        //
-        //String folderPath = data.getContainingDirectory().toString().split(":")[1];
-        //
-        //if (folderPath.contains(Paths.get("/src/main").toString())) {
-        //    return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction") };
-        //} else if (folderPath.contains(Paths.get("/src/test").toString())){
-        //    return new AnAction[] { ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
-        //} else {
-        //    return new AnAction[0];
-        //}
+        if (psiFile == null || !psiFile.getFileType().getName().equals("JAVA")) {
+            return new AnAction[0];
+        }
+
+        // 文件路径
+        String sourcePath = psiFile.getOriginalFile().getVirtualFile().getPath();
+
+        if (sourcePath.contains(Paths.get("/src/main").toString())) {
+            return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction") };
+        } else if (sourcePath.contains(Paths.get("/src/test").toString())){
+            return new AnAction[] { ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
+        } else {
+            return new AnAction[0];
+        }
     }
 }

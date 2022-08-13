@@ -40,7 +40,15 @@ public class FileTest {
 
     @Test
     public void path_test() {
-        Path path = Paths.get("/Users/s");
+        Path path = Paths.get("/Users/sss/abc.txt");
+        boolean sss = path.toString().matches("sss");
+        System.out.println(sss);
+        System.out.println("+++++++++++++");
+        System.out.println(path.compareTo(Paths.get("sss")));
+        System.out.println("--------------");
+        System.out.println(path.startsWith("sss"));
+        System.out.println(path.endsWith("sss"));
+        System.out.println(path.resolveSibling("sss"));
         //Path abc = path.resolve(Paths.get("/abc"));
         //path.re
     }
