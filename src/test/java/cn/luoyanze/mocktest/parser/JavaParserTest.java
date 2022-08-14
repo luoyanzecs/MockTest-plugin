@@ -140,6 +140,18 @@ public class JavaParserTest {
 
     }
 
+    @Test
+    public void test_template() throws Exception{
+        SimpleJavaSource javaFileV3 = new SimpleJavaSource();
+
+        CompilationUnit parse = StaticJavaParser.parse(Paths.get("NearbyRestaurantRepositoryImpl.java"));
+        new JavaSourceVisitorAdapter().visit(parse, javaFileV3);
+
+        String test = TemplateService.generateTemplate(javaFileV3, "Test");
+        System.out.println(test);
+
+    }
+
 
     @Test
     public void testParser() throws Exception{
@@ -188,7 +200,9 @@ public class JavaParserTest {
     }
 
 
-    @Test public void testparse() {
+
+    @Test
+    public void testparse() {
         JavaParser javaParser = new JavaParser();
         ParseResult<Statement> statementParseResult = javaParser.parseStatement("MemberModifier.    field(A.class, \"abc\").set(abc, 123);");
         System.out.println(statementParseResult);

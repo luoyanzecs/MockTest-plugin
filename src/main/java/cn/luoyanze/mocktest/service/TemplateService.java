@@ -50,13 +50,19 @@ public class TemplateService {
 
         Set<String> prepareForTest = source.UTIL.getPrepareForTest();
         data.put("prepare_for_tests", prepareForTest);
-        data.put("suppresses", prepareForTest.stream().map(it -> source.getImportMaps().get(it)).filter(Objects::nonNull).collect(Collectors.toSet()));
+
+        Set<String> suppresses =
+                source.getImportMaps().entrySet().stream()
+                        .filter(it -> prepareForTest.contains(it.getKey()))
+                        .map(it -> it.getValue() + "." + it.getKey())
+                        .collect(Collectors.toSet());
+        data.put("suppresses", suppresses);
 
         data.put("mocks", source.UTIL.getMockFields());
         data.put("mock_statics", source.UTIL.getMockStatics());
 
         data.put("useSlf4j", source.UTIL.isUseSlf4j());
-
+        data.put("has_logger", source.UTIL.hasLogger());
         data.put("constructor_params", source.UTIL.getConstructorParamsForTest());
         data.put("fields_not_in_constructor", source.UTIL.getFieldsNotInConstructor());
 

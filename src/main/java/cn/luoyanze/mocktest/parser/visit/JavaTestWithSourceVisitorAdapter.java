@@ -174,7 +174,7 @@ public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJ
         javaParser.parseClassOrInterfaceType(source.getClassname()).getResult()
                 .ifPresent(sourceClass-> {
                     ExpressionStmt newExpressionStmt = new ExpressionStmt(new VariableDeclarationExpr(
-                            new VariableDeclarator(null, testVariable, new ObjectCreationExpr(null, sourceClass, new NodeList<>(paramExprs)))
+                            new VariableDeclarator(sourceClass, testVariable, new ObjectCreationExpr(null, sourceClass, new NodeList<>(paramExprs)))
                     ));
                     setupBody.addStatement(newExpressionStmt);
                 });

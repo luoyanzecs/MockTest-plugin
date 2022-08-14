@@ -68,7 +68,7 @@ public class GeneratorPopupAction extends AnAction {
             if (testFile == null) {
                 String testClassname = sourceName + "Test";
                 String mockTestTemplate = TemplateService.generateTemplate(simpleJavaSource, testClassname);
-                Files.write(Paths.get(testDirPath.toString(), testClassname + ".java"), mockTestTemplate.getBytes(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+                Files.write(testDirPath.resolve(testClassname + ".java"), mockTestTemplate.getBytes(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
             } else {
                 CompilationUnit testParser = StaticJavaParser.parse(testFile);
                 new JavaTestWithSourceVisitorAdapter().visit(testParser, simpleJavaSource);

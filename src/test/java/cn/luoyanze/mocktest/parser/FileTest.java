@@ -14,6 +14,8 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -25,10 +27,14 @@ import java.util.stream.Stream;
 public class FileTest {
 
     @Test
-    public void files() {
-        File users = new File("/Users/luoyanze");
-        for (String s : users.list()) {
-            System.out.println(s);
+    public void files() throws IOException {
+        String s = Files.readString(Paths.get("NearbyRestaurantRepositoryImpl.java"));
+        String reg = "import[^;\n]*?\\.LoggerFactory(?=[;|\\s|\n])";
+        Pattern compile = Pattern.compile(reg);
+        Matcher matcher = compile.matcher(s);
+        while (matcher.find()) {
+            System.out.println(matcher.group());
+            System.out.println("------------");
         }
     }
 
@@ -55,7 +61,7 @@ public class FileTest {
 
     @Test
     public void test_file_path() {
-        File file = new File("template/JavaTemplate.ftl");
+        File file = new File("src/main/resources/template/JavaTemplate.ftl");
         System.out.println(file.toPath());
         System.out.println(file.getAbsoluteFile().toPath());
         //Path abc = path.resolve(Paths.get("/abc"));

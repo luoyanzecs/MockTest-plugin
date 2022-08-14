@@ -43,6 +43,10 @@ public class SimpleJavaSource {
             this.source = source;
         }
 
+        public boolean hasLogger() {
+            return source.getFields().stream().map(Field::getClassname).anyMatch("Logger"::equals);
+        }
+
         public boolean isUseSlf4j() {
             return Optional.ofNullable(source.getImportMaps().get("Logger")).filter("org.slf4j"::equals).isPresent();
         }

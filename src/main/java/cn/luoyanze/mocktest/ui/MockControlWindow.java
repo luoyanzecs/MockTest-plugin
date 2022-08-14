@@ -1,6 +1,7 @@
 package cn.luoyanze.mocktest.ui;
 
 import cn.luoyanze.mocktest.service.LoggerReplaceService;
+import cn.luoyanze.mocktest.service.RefineAllTestService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +24,7 @@ public class MockControlWindow {
         final String projectPath = project.getBasePath();
 
         refineAllJavaTest.addActionListener(e -> {
-
+            new RefineAllTestService(e, project, toolWindow).startAllRefine();
         });
 
         replaceAllLogger.addActionListener(e -> {

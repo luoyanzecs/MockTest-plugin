@@ -23,7 +23,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 * @Author MockGen
 * @Date ${.now}
 */
-
 @RunWith(PowerMockRunner.class)
 @MockPolicy(Slf4jMockPolicy.class)
 @PrepareForTest({
@@ -40,13 +39,11 @@ import org.powermock.modules.junit4.PowerMockRunner;
 public class ${test_class_name} {
 
     private ${class_name} testObj;
-
 <#list mocks as item>
     @Mock
     private ${item.classname} ${item.name};
 </#list>
-
-<#if useSlf4j == false>
+<#if useSlf4j == false && has_logger == true>
     @Mock
     private Logger logger;
 </#if>
@@ -57,9 +54,9 @@ public class ${test_class_name} {
         PowerMockito.mockStatic(${item}.class);
     </#list>
 
-    <#if useSlf4j == false>
+    <#if useSlf4j == false  && has_logger == true>
         PowerMockito.mockStatic(LoggerFactory.class);
-        PowerMockito.when(LoggerFactory.getLogger(Mockito.eq(${class_name}.class)).thenReturn(logger);
+        PowerMockito.when(LoggerFactory.getLogger(Mockito.eq(${class_name}.class))).thenReturn(logger);
     </#if>
 
         testObj = new ${class_name}(<#list constructor_params as item>${item}<#if item_has_next>,</#if></#list>);

@@ -33,10 +33,7 @@ public class MockTestEditorGroup extends ActionGroup {
         if (e == null) {
             return new AnAction[0];
         }
-
         PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
-
-        Editor editor = e.getData(LangDataKeys.EDITOR);
 
         //return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction"), ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
 
