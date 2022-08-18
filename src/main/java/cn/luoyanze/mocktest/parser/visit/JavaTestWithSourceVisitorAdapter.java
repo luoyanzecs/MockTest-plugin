@@ -173,11 +173,12 @@ public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJ
 
         javaParser.parseClassOrInterfaceType(source.getClassname()).getResult()
                 .ifPresent(sourceClass-> {
-                    ExpressionStmt newExpressionStmt = new ExpressionStmt(new VariableDeclarationExpr(
-                            new VariableDeclarator(sourceClass, testVariable, new ObjectCreationExpr(null, sourceClass, new NodeList<>(paramExprs)))
-                    ));
+                    ExpressionStmt newExpressionStmt = new ExpressionStmt(
+                            new AssignExpr(new NameExpr(testVariable), new ObjectCreationExpr(null, sourceClass, new NodeList<>(paramExprs)), AssignExpr.Operator.ASSIGN)
+                    );
                     setupBody.addStatement(newExpressionStmt);
                 });
+
 
         // 添加membermodifier.field
         List<Field> memeberModifierFields =
@@ -187,12 +188,12 @@ public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJ
 
         String memberModifierTemplate = "MemberModifier.field(${class_name}.class, \"${field.name}\").set(${test_variable}, ${field.name});";
         memeberModifierFields.forEach(it -> {
-            String statment = memberModifierTemplate
+            String statement = memberModifierTemplate
                     .replace("${class_name}", source.getClassname())
                     .replace("${field.name}", it.getName())
                     .replace("${test_variable}", testVariable);
 
-            javaParser.parseStatement(statment).getResult().ifPresent(setupBody::addStatement);
+            javaParser.parseStatement(statement).getResult().ifPresent(setupBody::addStatement);
         });
     }
 

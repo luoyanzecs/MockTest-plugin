@@ -40,7 +40,6 @@ public class PreviousTestVisitAdapter extends VoidVisitorAdapter<TestSourceMap> 
 
         Map<String, String> maybeSourceImport = n.getImports().stream()
                 .map(ImportDeclaration::getName)
-                .filter(name -> test.getClassname().toLowerCase().contains(name.getIdentifier().toLowerCase()))
                 .collect(Collectors.toMap(
                         Name::getIdentifier,
                         it -> it.getQualifier().map(Node::toString).orElse("")

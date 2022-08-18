@@ -83,7 +83,7 @@ public class RefineAllTestService {
 
             Path sourcePath = modulePath
                     .resolve(Paths.get("src/main/java"))
-                    .resolve(Paths.get(testSourceMap.getSource().toString().replaceAll("\\.", File.pathSeparator) + ".java"));
+                    .resolve(Paths.get(testSourceMap.getSource().toString().replace(".", File.separator) + ".java"));
 
             if (Files.exists(sourcePath)) {
                 // 解析Java source文件

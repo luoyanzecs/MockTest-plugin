@@ -27,7 +27,7 @@ public class TemplateService {
 
     static final String template;
     static {
-        InputStream resourceAsStream = TemplateService.class.getResourceAsStream(Paths.get("/template/JavaTemplate.ftl").toString());
+        InputStream resourceAsStream = TemplateService.class.getResourceAsStream("/template/JavaTemplate.ftl");
         String ctx = "";
         try {
             if (resourceAsStream != null) {
