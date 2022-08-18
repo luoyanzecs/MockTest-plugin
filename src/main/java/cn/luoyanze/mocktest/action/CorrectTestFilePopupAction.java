@@ -51,7 +51,6 @@ public class CorrectTestFilePopupAction extends AnAction {
             return;
         }
         String moduleFilePath = moduleForFile.getModuleFilePath();
-
         String name = moduleForFile.getName();
         int index = moduleFilePath.lastIndexOf("/" + name + "/");
 

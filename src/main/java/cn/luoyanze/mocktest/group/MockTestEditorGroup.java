@@ -1,24 +1,12 @@
 package cn.luoyanze.mocktest.group;
 
-import cn.luoyanze.mocktest.action.CorrectTestFilePopupAction;
-import cn.luoyanze.mocktest.action.GeneratorPopupAction;
-import com.google.common.collect.Lists;
 import com.intellij.openapi.actionSystem.*;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.module.ModuleUtil;
-import com.intellij.openapi.roots.ModuleRootManager;
-import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.impl.file.PsiFileImplUtil;
-import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 /**
  * @Author luoyanze[luoyanzeze@icloud.com]
@@ -34,8 +22,6 @@ public class MockTestEditorGroup extends ActionGroup {
             return new AnAction[0];
         }
         PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
-
-        //return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction"), ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
 
         if (psiFile == null || !psiFile.getFileType().getName().equals("JAVA")) {
             return new AnAction[0];
