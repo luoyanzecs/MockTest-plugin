@@ -25,7 +25,7 @@ public class SimpleJavaSource {
 
     private final Set<String> staticRef = new HashSet<>();
 
-    private List<Parameter> constructorParams;
+    private List<Parameter> constructorParams = new ArrayList<>();
 
     private boolean hasEmptyConstructor;
 
@@ -54,10 +54,10 @@ public class SimpleJavaSource {
         public List<Field> getMockFields() {
             return source.getFields().stream()
                     .filter(it -> {
-                        if (it.getName().equals("Logger")) {
+                        if (it.getClassname().equals("Logger")) {
                             return !isUseSlf4j();
                         }
-                        return true;
+                        return Optional.ofNullable(importMaps.get(it.getClassname())).map(im -> im.contains("ctrip")).isPresent();
                     }).collect(Collectors.toList());
         }
 
@@ -109,12 +109,14 @@ public class SimpleJavaSource {
         public Set<String> getImports() {
             Set<String> mocks = this.getMockFields().stream().map(Field::getClassname).collect(Collectors.toSet());
             Set<String> mockStatics = this.getMockStatics();
-            return source.getImportMaps().entrySet().stream()
+            Set<String> imports = source.getImportMaps().entrySet().stream()
                     .filter(it ->
                             getClassname().equals(it.getKey()) || mocks.contains(it.getKey()) || mockStatics.contains(it.getKey())
                     )
                     .map(it -> it.getValue() + "." + it.getKey())
                     .collect(Collectors.toSet());
+            imports.add(source.getPackageName() + "." + source.getClassname());
+            return imports;
         }
     }
 

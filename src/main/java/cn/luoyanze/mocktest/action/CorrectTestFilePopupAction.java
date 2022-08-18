@@ -50,7 +50,12 @@ public class CorrectTestFilePopupAction extends AnAction {
             Notifications.Bus.notify(new Notification(Notifications.SYSTEM_MESSAGES_GROUP_ID, "MockTest", "无法获取maven模块", NotificationType.INFORMATION));
             return;
         }
-        Path modulePath = Paths.get(moduleForFile.getModuleFilePath());
+        String moduleFilePath = moduleForFile.getModuleFilePath();
+
+        String name = moduleForFile.getName();
+        int index = moduleFilePath.lastIndexOf("/" + name + "/");
+
+        Path modulePath = Paths.get(moduleFilePath.substring(0, index), "/" + name + "/");
 
         RefineAllTestService.refine(testSourcePath, modulePath);
     }

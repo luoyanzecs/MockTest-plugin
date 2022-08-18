@@ -42,11 +42,10 @@ public class MockTestEditorGroup extends ActionGroup {
         }
 
         // 文件路径
-        String sourcePath = psiFile.getOriginalFile().getVirtualFile().getPath();
-
-        if (sourcePath.contains(Paths.get("/src/main").toString())) {
+        Path path = Paths.get(psiFile.getOriginalFile().getVirtualFile().getPath());
+        if (path.toString().contains(Paths.get("/src/main").toString())) {
             return new AnAction[] { ActionManager.getInstance().getAction("GeneratorPopupAction") };
-        } else if (sourcePath.contains(Paths.get("/src/test").toString())){
+        } else if (path.toString().contains(Paths.get("/src/test").toString())){
             return new AnAction[] { ActionManager.getInstance().getAction("CorrectTestFilePopupAction") };
         } else {
             return new AnAction[0];
