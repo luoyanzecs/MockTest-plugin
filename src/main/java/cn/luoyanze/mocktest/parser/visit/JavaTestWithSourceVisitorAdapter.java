@@ -135,6 +135,9 @@ public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJ
                             existMockStatics.add(typeAsString);
                             return true;
                         }
+                        if ("setInternalState".equals(methodCallExpr.getNameAsString())) {
+                            return methodCallExpr.toString().contains(testVariable);
+                        }
                         if ("mock".equals(methodCallExpr.getNameAsString())) {
                             String typeAsString = methodCallExpr.getArguments().get(0).asClassExpr().getTypeAsString();
                             return needMocks.contains(typeAsString);
@@ -204,11 +207,27 @@ public class JavaTestWithSourceVisitorAdapter extends VoidVisitorAdapter<SimpleJ
                 .findFirst()
                 .ifPresent(annotationExpr -> n.getAnnotations().remove(annotationExpr));
 
+        super.visit(n, source);
+
+        Set<String> needMockFields = source.UTIL.getMockFields().stream().map(Field::getClassname).collect(Collectors.toSet());
+
         VariableDeclarator variable = n.getVariable(0);
         if (variable.getTypeAsString().equals(source.getClassname())) {
             testVariable = variable.getNameAsString();
+            return;
         }
-        super.visit(n, source);
+        boolean isAnnotatedByMock = n.getAnnotations().stream()
+                .filter(Expression::isMarkerAnnotationExpr)
+                .map(NodeWithName::getNameAsString)
+                .anyMatch("Mock"::equals);
+
+        if (isAnnotatedByMock) {
+            return;
+        }
+
+        if (needMockFields.contains(variable.getTypeAsString())) {
+            n.addMarkerAnnotation("Mock");
+        }
     }
 
     private void processFields(final ClassOrInterfaceDeclaration n, final SimpleJavaSource source) {

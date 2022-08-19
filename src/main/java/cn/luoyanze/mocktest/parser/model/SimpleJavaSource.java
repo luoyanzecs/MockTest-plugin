@@ -103,20 +103,19 @@ public class SimpleJavaSource {
             List<String> constructorParams = this.getConstructorParamsForTest();
             return source.getFields().stream()
                     .filter(it -> !constructorParams.contains(it.getName()))
+                    .filter(it -> it.getName().contains("ctrip"))
                     .collect(Collectors.toList());
         }
 
         public Set<String> getImports() {
             Set<String> mocks = this.getMockFields().stream().map(Field::getClassname).collect(Collectors.toSet());
             Set<String> mockStatics = this.getMockStatics();
-            Set<String> imports = source.getImportMaps().entrySet().stream()
+            return source.getImportMaps().entrySet().stream()
                     .filter(it ->
                             getClassname().equals(it.getKey()) || mocks.contains(it.getKey()) || mockStatics.contains(it.getKey())
                     )
                     .map(it -> it.getValue() + "." + it.getKey())
                     .collect(Collectors.toSet());
-            imports.add(source.getPackageName() + "." + source.getClassname());
-            return imports;
         }
     }
 
