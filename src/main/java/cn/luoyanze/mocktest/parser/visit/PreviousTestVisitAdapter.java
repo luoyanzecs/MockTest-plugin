@@ -7,7 +7,10 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.ClassExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.Name;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.nodeTypes.NodeWithType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
@@ -48,19 +51,32 @@ public class PreviousTestVisitAdapter extends VoidVisitorAdapter<TestSourceMap> 
         maybeSource.stream()
                 .filter(it -> !Strings.isNullOrEmpty(maybeSourceImport.get(it)))
                 .findFirst()
-                .ifPresent(it -> {
-                    ClassMap classMap = new ClassMap(it, maybeSourceImport.get(it));
-                    map.setSource(classMap);
-                });
+                .ifPresentOrElse(
+                        it -> map.setSource(new ClassMap(it, maybeSourceImport.get(it))),
+                        () -> maybeSource.stream()
+                                .findFirst()
+                                .ifPresent(it -> map.setSource(new ClassMap(it, test.getPackageName())))
+                );
 
     }
 
 
     @Override
     public void visit(final ClassOrInterfaceDeclaration n, final TestSourceMap map) {
+        boolean isAnnotatedByPowerMockRunner =
+                n.getAnnotations().stream()
+                        .filter(Expression::isSingleMemberAnnotationExpr)
+                        .filter(it -> it.getNameAsString().equals("RunWith"))
+                        .map(Expression::asSingleMemberAnnotationExpr)
+                        .map(SingleMemberAnnotationExpr::getMemberValue)
+                        .filter(Expression::isClassExpr)
+                        .map(Expression::asClassExpr)
+                        .map(ClassExpr::getType)
+                        .map(Node::toString)
+                        .anyMatch("PowerMockRunner"::equals);
 
-        Set<String> annotations = n.getAnnotations().stream().map(NodeWithName::getNameAsString).collect(Collectors.toSet());
-        map.setRunWithAnnotated(annotations.contains("RunWith"));
+
+        map.setRunWithAnnotated(isAnnotatedByPowerMockRunner);
 
         List<String> fieldTypes =
                 n.getMembers().stream()
